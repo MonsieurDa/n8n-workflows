@@ -159,6 +159,10 @@ def find_candidates(
             raise MatchError("Clé API Anthropic invalide : vérifiez ANTHROPIC_API_KEY.") from e
         except anthropic.RateLimitError as e:
             raise MatchError("Limite de requêtes Anthropic atteinte, réessayez dans une minute.") from e
+        except anthropic.BadRequestError as e:
+            if "credit balance" in str(e).lower():
+                raise MatchError("Crédit API Anthropic épuisé : rechargez le compte sur console.anthropic.com (Plans & Billing).") from e
+            raise MatchError(f"Erreur de l'API Anthropic ({e.status_code}) : {e.message}") from e
         except anthropic.APIStatusError as e:
             raise MatchError(f"Erreur de l'API Anthropic ({e.status_code}) : {e.message}") from e
         except anthropic.APIConnectionError as e:
