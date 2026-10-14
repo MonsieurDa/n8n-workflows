@@ -7,6 +7,7 @@ Seuls les profils réellement vus dans les résultats de recherche sont conserv�
 
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass, field
 from typing import Any, Callable, Literal
@@ -122,7 +123,10 @@ def find_candidates(
     client: anthropic.Anthropic | None = None,
     on_progress: Callable[[str], None] = lambda _msg: None,
 ) -> SearchResult:
-    client = client or anthropic.Anthropic()
+    if client is None:
+        if not os.getenv("ANTHROPIC_API_KEY"):
+            raise MatchError("Clé API Anthropic manquante : renseignez ANTHROPIC_API_KEY dans le fichier .env.")
+        client = anthropic.Anthropic()
     tools = [
         {
             "type": "web_search_20260209",
