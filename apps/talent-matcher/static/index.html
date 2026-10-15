@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Talent Matcher</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout : console de sourcing en deux colonnes — l'offre à gauche, la shortlist à droite ; une seule colonne sur mobile. */
+:root {
+  --bg: #f3f4f1;
+  --panel: #ffffff;
+  --ink: #18201f;
+  --muted: #5d6865;
+  --line: #dde1dc;
+  --accent: #b5561c;
+  --accent-ink: #ffffff;
+  --accent-soft: #f6e6da;
+  --code-bg: #eceeea;
+  --good: #1f7a4d;
+  --good-soft: #dcefe4;
+  --mid: #9a6a00;
+  --mid-soft: #f5ebcf;
+  --low: #8a8f8c;
+  --low-soft: #e8eae7;
+  --focus: #2a63c4;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --font-body: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121615; --panel: #1a1f1e; --ink: #e7ebe8; --muted: #9aa6a2; --line: #2c3432;
+    --accent: #e8814a; --accent-ink: #1a0f08; --accent-soft: #3a2518; --code-bg: #232a28;
+    --good: #5cc48e; --good-soft: #1d3428; --mid: #e0b44a; --mid-soft: #3a3019; --low: #7d8784; --low-soft: #252b29;
+    --focus: #7aa7f0; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121615; --panel: #1a1f1e; --ink: #e7ebe8; --muted: #9aa6a2; --line: #2c3432;
+  --accent: #e8814a; --accent-ink: #1a0f08; --accent-soft: #3a2518; --code-bg: #232a28;
+  --good: #5cc48e; --good-soft: #1d3428; --mid: #e0b44a; --mid-soft: #3a3019; --low: #7d8784; --low-soft: #252b29;
+  --focus: #7aa7f0; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.5 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 48px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 20px; }
+header.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; }
+h1 span { color: var(--accent); }
+.tagline { color: var(--muted); margin: 2px 0 0; }
+.conn { font-size: 0.85rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--low); flex: none; }
+.dot.on { background: var(--good); }
+
+.grid { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; min-width: 0; }
+.panel h2 { font-size: 1.15rem; font-weight: 700; }
+.eyebrow { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.72rem; font-weight: 600; color: var(--muted); }
+
+form { display: grid; gap: 14px; margin-top: 14px; }
+.field { display: grid; gap: 5px; min-width: 0; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 420px) { .row2 { grid-template-columns: 1fr; } }
+label, .label { font-size: 0.85rem; font-weight: 600; }
+.hint { font-size: 0.78rem; color: var(--muted); }
+input[type="text"], input[type="email"], input[type="url"], input[type="number"], select, textarea {
+  width: 100%; font: inherit; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 7px; padding: 9px 11px;
+}
+textarea { min-height: 190px; resize: vertical; line-height: 1.45; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label { text-align: center; padding: 8px 4px; cursor: pointer; font-weight: 500; font-size: 0.88rem; border-left: 1px solid var(--line); }
+.seg label:first-of-type { border-left: 0; }
+.seg input:checked + label { background: var(--accent); color: var(--accent-ink); }
+.seg input:focus-visible + label { outline: 2px solid var(--focus); outline-offset: -2px; }
+.check { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+
+.drop { border: 1px dashed var(--line); border-radius: 7px; padding: 8px 10px; font-size: 0.8rem; color: var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+
+button { font: inherit; cursor: pointer; border-radius: 8px; }
+.btn { background: var(--accent); color: var(--accent-ink); border: 0; padding: 11px 16px; font-weight: 600; font-size: 0.95rem; }
+.btn:disabled { opacity: 0.6; cursor: progress; }
+.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 7px 12px; font-size: 0.85rem; font-weight: 500; }
+.btn-ghost:hover { border-color: var(--muted); }
+.linkish { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; font-size: 0.8rem; }
+
+details.settings { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 4px; }
+details.settings summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+details.settings .field { margin-top: 10px; }
+
+/* Résultats */
+.res-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.res-head .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.badge-demo { display: inline-block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; background: var(--mid-soft); color: var(--mid); padding: 2px 8px; border-radius: 99px; margin-left: 8px; vertical-align: middle; }
+.badge-demo[hidden] { display: none; }
+.stats { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 14px 0 4px; font-size: 0.88rem; color: var(--muted); }
+.stats b { color: var(--ink); font-variant-numeric: tabular-nums; font-size: 1.05rem; }
+.criteria { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip { font-size: 0.78rem; padding: 3px 9px; border-radius: 99px; background: var(--code-bg); }
+.chip.must { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+details.queries { margin-top: 12px; font-size: 0.85rem; }
+details.queries summary { cursor: pointer; color: var(--muted); font-weight: 500; }
+details.queries ol { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 4px; }
+details.queries code { font-family: var(--font-mono); font-size: 0.76rem; background: var(--code-bg); padding: 2px 6px; border-radius: 4px; word-break: break-word; }
+
+.filters { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin: 16px 0 10px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 0.85rem; }
+.filters input[type="range"] { width: 120px; accent-color: var(--accent); vertical-align: middle; }
+
+.list { display: grid; gap: 10px; }
+.cand { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 14px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.score { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; font-variant-numeric: tabular-nums;
+  background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--low-soft) 0); position: relative; }
+.score::before { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: var(--panel); }
+.score span { position: relative; color: var(--c); }
+.cand .top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.cand h3 { font-size: 1.02rem; font-weight: 700; }
+.cand h3 a { color: var(--ink); text-decoration: none; }
+.cand h3 a:hover { color: var(--accent); text-decoration: underline; }
+.cand .headline { color: var(--muted); font-size: 0.88rem; margin: 2px 0 6px; }
+.pill { font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
+.pill.yes { background: var(--good-soft); color: var(--good); }
+.pill.no { background: var(--low-soft); color: var(--muted); }
+.pill.unknown { background: var(--mid-soft); color: var(--mid); }
+.meta { font-size: 0.8rem; color: var(--muted); }
+.summary { margin: 0 0 6px; font-size: 0.92rem; }
+.sg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.82rem; }
+@media (max-width: 560px) { .sg { grid-template-columns: 1fr; } }
+.sg ul { margin: 2px 0 0; padding-left: 16px; }
+.sg .plus { color: var(--good); font-weight: 600; }
+.sg .minus { color: var(--mid); font-weight: 600; }
+
+.empty, .loading, .error { padding: 28px 18px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: var(--radius); }
+.error { color: var(--ink); border-color: var(--accent); background: var(--accent-soft); text-align: left; }
+.steps { list-style: none; padding: 0; margin: 12px auto 0; display: grid; gap: 6px; max-width: 340px; text-align: left; font-size: 0.9rem; }
+.steps li { opacity: 0.45; }
+.steps li.active { opacity: 1; font-weight: 600; color: var(--ink); }
+.steps li.done { opacity: 0.8; }
+.steps li.done::before { content: "✓ "; color: var(--good); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 0.85rem; }
+footer { font-size: 0.78rem; color: var(--muted); max-width: 75ch; }
+@media (prefers-reduced-motion: no-preference) { .cand { animation: rise .25s ease both; } @keyframes rise { from { transform: translateY(4px); opacity: .6; } } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Talent<span>·</span>Matcher</h1>
+      <p class="tagline">Déposez une offre ou une mission, recevez la shortlist des profils LinkedIn qui correspondent.</p>
+    </div>
+    <div class="conn" id="conn"><span class="dot" id="connDot"></span><span id="connText">Vérification du serveur…</span></div>
+  </header>
+
+  <div class="grid">
+    <!-- Offre -->
+    <section class="panel" aria-labelledby="offerTitle">
+      <div class="eyebrow">Étape 1</div>
+      <h2 id="offerTitle">L'offre ou la mission</h2>
+      <form id="offerForm" novalidate>
+        <div class="field">
+          <label for="title">Intitulé du poste</label>
+          <input type="text" id="title" placeholder="Ex. Data Engineer Databricks">
+        </div>
+        <div class="field">
+          <label for="description">Description / appel d'offres</label>
+          <textarea id="description" required placeholder="Collez ici le texte de l'appel d'offres ou de la fiche de mission : contexte, missions, compétences requises, durée, TJM…"></textarea>
+          <div class="drop" id="drop">
+            <span>…ou déposez un fichier .txt / .md ici</span>
+            <label class="linkish" for="file">Choisir un fichier</label>
+            <input type="file" id="file" accept=".txt,.md,text/plain,text/markdown" hidden>
+          </div>
+        </div>
+        <div class="field">
+          <span class="label" id="ctLabel">Type de profil</span>
+          <div class="seg" role="radiogroup" aria-labelledby="ctLabel">
+            <input type="radio" name="contractType" id="ct-freelance" value="freelance" checked><label for="ct-freelance">Freelance</label>
+            <input type="radio" name="contractType" id="ct-employee" value="employee"><label for="ct-employee">Salarié</label>
+            <input type="radio" name="contractType" id="ct-any" value="any"><label for="ct-any">Indifférent</label>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="location">Localisation</label>
+            <input type="text" id="location" placeholder="Ex. Paris">
+          </div>
+          <div class="field">
+            <label for="seniority">Séniorité</label>
+            <select id="seniority">
+              <option value="">Indifférente</option>
+              <option>Junior (0-2 ans)</option>
+              <option>Confirmé (3-5 ans)</option>
+              <option>Senior (6-10 ans)</option>
+              <option>Expert / Lead (10 ans +)</option>
+            </select>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="remote"> Télétravail possible</label>
+        <div class="row2">
+          <div class="field">
+            <label for="maxCandidates">Nombre de candidats</label>
+            <input type="number" id="maxCandidates" min="1" max="50" value="15">
+          </div>
+          <div class="field">
+            <label for="notifyEmail">Recevoir la liste par e-mail</label>
+            <input type="email" id="notifyEmail" placeholder="facultatif">
+          </div>
+        </div>
+        <button class="btn" type="submit" id="submitBtn">Chercher les candidats</button>
+      </form>
+    </section>
+
+    <!-- Résultats -->
+    <section class="panel" aria-labelledby="resTitle" aria-live="polite">
+      <div class="res-head">
+        <div>
+          <div class="eyebrow">Étape 2</div>
+          <h2 id="resTitle">Candidats trouvés<span class="badge-demo" id="demoBadge">Exemple</span></h2>
+        </div>
+        <div class="actions">
+          <button class="btn-ghost" type="button" id="copyBtn">Copier la liste</button>
+          <button class="btn-ghost" type="button" id="csvBtn">Exporter en CSV</button>
+        </div>
+      </div>
+      <div id="resBody"></div>
+    </section>
+  </div>
+
+  <footer>
+    Les candidats sont trouvés par Claude via des recherches web sur les profils LinkedIn publics (aucune connexion à votre compte LinkedIn, aucun scraping), puis notés à partir des informations visibles. Seuls les profils réellement apparus dans les résultats de recherche sont affichés. Les scores sont indicatifs : vérifiez chaque profil avant de contacter la personne, et respectez le RGPD (information des personnes, durée de conservation).
+  </footer>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const DEMO = {
+    offer: { title: "Data Engineer Databricks", contractType: "freelance", location: "Paris",
+      summary: "Data engineer freelance senior pour industrialiser des pipelines Spark sur Databricks (Azure), mission de 6 mois à Paris avec 3 jours de télétravail." },
+    criteria: { mustHave: ["Databricks", "Spark / PySpark", "Azure"], niceToHave: ["dbt", "Terraform", "Unity Catalog"], seniority: "Senior", languages: ["Français", "Anglais"] },
+    queries: [
+      'site:linkedin.com/in ("data engineer" OR "ingénieur data") "databricks" "azure" Paris (freelance OR indépendant OR TJM)',
+      'site:linkedin.com/in "data engineer" "pyspark" "databricks" Paris freelance',
+      'site:linkedin.com/in ("consultant data" OR "data engineer") "spark" "azure data factory" "Île-de-France" indépendant',
+      'site:linkedin.com/in "databricks" freelance Paris',
+    ],
+    stats: { queries: 4, profilesFound: 37, returned: 5 },
+    candidates: [
+      { name: "Camille R. (exemple)", headline: "Data Engineer Freelance · Databricks · Azure", url: "https://www.linkedin.com/in/", score: 92, freelance: "yes", location: "Paris", seniority: "Senior",
+        summary: "Titre et extrait correspondent exactement : Databricks, PySpark et Azure, freelance basé à Paris.", strengths: ["Databricks + Azure cités", "Freelance déclaré", "Basé à Paris"], gaps: ["Disponibilité non indiquée"] },
+      { name: "Yanis B. (exemple)", headline: "Consultant Data indépendant · Spark · dbt", url: "https://www.linkedin.com/in/", score: 84, freelance: "yes", location: "Île-de-France", seniority: "Senior",
+        summary: "Solide en Spark et dbt ; Databricks mentionné, Azure non visible dans l'extrait.", strengths: ["Spark et dbt", "Indépendant"], gaps: ["Azure à confirmer"] },
+      { name: "Inès M. (exemple)", headline: "Lead Data Engineer · PySpark · Azure Data Factory", url: "https://www.linkedin.com/in/", score: 76, freelance: "unknown", location: "Paris", seniority: "Lead",
+        summary: "Très bon profil technique Azure, mais rien n'indique une activité en freelance.", strengths: ["Azure Data Factory", "Rôle de lead"], gaps: ["Statut freelance inconnu", "Databricks non cité"] },
+      { name: "Thomas L. (exemple)", headline: "Freelance Big Data · Hadoop · Spark · Scala", url: "https://www.linkedin.com/in/", score: 61, freelance: "yes", location: "Lyon", seniority: "Senior",
+        summary: "Expérience Spark réelle mais plutôt orientée écosystème Hadoop, basé à Lyon.", strengths: ["Spark / Scala", "Freelance"], gaps: ["Pas de Databricks", "Hors Paris"] },
+      { name: "Sarah K. (exemple)", headline: "Data Engineer junior · Python · SQL", url: "https://www.linkedin.com/in/", score: 38, freelance: "unknown", location: "Paris", seniority: "Junior",
+        summary: "Bases Python/SQL pertinentes mais niveau insuffisant pour la mission.", strengths: ["Python"], gaps: ["Junior", "Spark non cité"] },
+    ],
+  };
+
+  let data = DEMO;
+  let isDemo = true;
+  let minScore = 0;
+  let onlyFreelance = false;
+
+  // --- Connexion au serveur
+  let serverReady = false;
+  fetch("api/config").then(r => r.ok ? r.json() : Promise.reject()).then(cfg => {
+    serverReady = cfg.anthropic;
+    $("connDot").classList.toggle("on", serverReady);
+    $("connText").textContent = serverReady
+      ? (cfg.email ? "Prêt · envoi par e-mail activé" : "Prêt · e-mail non configuré")
+      : "Clé API Anthropic manquante sur le serveur";
+  }).catch(() => {
+    $("connText").textContent = "Mode démo : serveur non démarré";
+  });
+
+  // --- Fichier texte
+  const drop = $("drop");
+  function readFile(f) {
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => { $("description").value = String(r.result || ""); toast("Fichier chargé : " + f.name); };
+    r.readAsText(f);
+  }
+  $("file").addEventListener("change", e => readFile(e.target.files[0]));
+  ["dragover", "dragenter"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(t => drop.addEventListener(t, () => drop.classList.remove("over")));
+  drop.addEventListener("drop", e => { e.preventDefault(); readFile(e.dataTransfer.files[0]); });
+
+  // --- Rendu
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const FL = { yes: "Freelance", no: "Salarié", unknown: "Statut ?" };
+  const scoreColor = s => s >= 75 ? "var(--good)" : s >= 50 ? "var(--mid)" : "var(--low)";
+
+  function visible() {
+    return (data.candidates || []).filter(c => c.score >= minScore && (!onlyFreelance || c.freelance === "yes"));
+  }
+
+  function render() {
+    $("demoBadge").hidden = !isDemo;
+    const c = data.criteria || {};
+    const chips = [
+      ...(c.mustHave || []).map(s => `<span class="chip must">${esc(s)}</span>`),
+      ...(c.niceToHave || []).map(s => `<span class="chip">${esc(s)}</span>`),
+      c.seniority ? `<span class="chip">${esc(c.seniority)}</span>` : "",
+    ].join("");
+    const list = visible();
+    const st = data.stats || {};
+    $("resBody").innerHTML = `
+      ${data.offer?.summary ? `<p class="summary" style="margin-top:12px">${esc(data.offer.summary)}</p>` : ""}
+      <div class="criteria">${chips}</div>
+      <div class="stats">
+        <span><b>${st.queries ?? 0}</b> recherches web</span>
+        <span><b>${st.profilesFound ?? 0}</b> profils repérés</span>
+        <span><b>${st.returned ?? list.length}</b> retenus</span>
+      </div>
+      ${(data.queries || []).length ? `<details class="queries"><summary>Voir les recherches effectuées</summary><ol>${data.queries.map(q => `<li><code>${esc(q)}</code></li>`).join("")}</ol></details>` : ""}
+      <div class="filters">
+        <label for="minScore">Score minimum <b id="minScoreVal">${minScore}</b></label>
+        <input type="range" id="minScore" min="0" max="100" step="5" value="${minScore}">
+        <label class="check"><input type="checkbox" id="onlyFl" ${onlyFreelance ? "checked" : ""}> Freelances confirmés uniquement</label>
+      </div>
+      <div class="list">${list.length ? list.map(card).join("") : `<div class="empty">Aucun candidat ne passe ces filtres. Baissez le score minimum ou élargissez l'offre.</div>`}</div>`;
+    $("minScore").addEventListener("input", e => { minScore = +e.target.value; render(); $("minScore").focus(); });
+    $("onlyFl").addEventListener("change", e => { onlyFreelance = e.target.checked; render(); $("onlyFl").focus(); });
+  }
+
+  function card(c) {
+    return `<article class="cand">
+      <div class="score" style="--p:${c.score};--c:${scoreColor(c.score)}" aria-label="Score ${c.score} sur 100"><span>${c.score}</span></div>
+      <div style="min-width:0">
+        <div class="top">
+          <h3><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.name)}</a></h3>
+          <span class="pill ${esc(c.freelance)}">${FL[c.freelance] || "Statut ?"}</span>
+          <span class="meta">${[c.location, c.seniority].filter(Boolean).map(esc).join(" · ")}</span>
+        </div>
+        <p class="headline">${esc(c.headline)}</p>
+        <p class="summary">${esc(c.summary)}</p>
+        <div class="sg">
+          <div><span class="plus">Points forts</span><ul>${(c.strengths || []).map(s => `<li>${esc(s)}</li>`).join("") || "<li>—</li>"}</ul></div>
+          <div><span class="minus">À vérifier</span><ul>${(c.gaps || []).map(s => `<li>${esc(s)}</li>`).join("") || "<li>—</li>"}</ul></div>
+        </div>
+      </div>
+    </article>`;
+  }
+
+  // --- Recherche
+  function showLoading(progress) {
+    $("resBody").innerHTML = `<div class="loading">Recherche en cours, comptez 1 à 4 minutes.<ul class="steps"><li class="active">${esc(progress || "Démarrage")}</li></ul></div>`;
+  }
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  async function api(path, opts) {
+    const res = await fetch(path, opts);
+    let json = {};
+    try { json = await res.json(); } catch {}
+    if (!res.ok) {
+      const d = json.detail;
+      throw new Error(Array.isArray(d) ? "Formulaire invalide : " + d.map(x => x.msg).join(", ") : (d || `Erreur serveur ${res.status}.`));
+    }
+    return json;
+  }
+
+  $("offerForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const description = $("description").value.trim();
+    if (description.length < 30) {
+      $("description").focus();
+      toast("Collez la description de la mission (30 caractères minimum).");
+      return;
+    }
+    const payload = {
+      title: $("title").value.trim(),
+      description,
+      contractType: document.querySelector('input[name="contractType"]:checked').value,
+      location: $("location").value.trim(),
+      seniority: $("seniority").value,
+      remote: $("remote").checked,
+      maxCandidates: +$("maxCandidates").value || 15,
+      notifyEmail: $("notifyEmail").value.trim() || null,
+    };
+    if (!serverReady) {
+      toast("Le serveur n'est pas prêt : lancez-le avec une clé API Anthropic (voir le README).");
+      return;
+    }
+    $("submitBtn").disabled = true;
+    $("submitBtn").textContent = "Recherche en cours…";
+    showLoading();
+    try {
+      const { id } = await api("api/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      let job;
+      for (;;) {
+        await sleep(3000);
+        job = await api("api/search/" + id);
+        if (job.status !== "running") break;
+        showLoading(job.progress);
+      }
+      if (job.status === "error") throw new Error(job.error);
+      data = job.result; isDemo = false; minScore = 0; onlyFreelance = false;
+      render();
+      toast(data.email || "Liste prête");
+    } catch (err) {
+      const msg = err instanceof TypeError ? "Impossible de joindre le serveur. Est-il toujours démarré ?" : err.message;
+      $("resBody").innerHTML = `<div class="error"><b>La recherche a échoué.</b><br>${esc(msg)}</div>`;
+    } finally {
+      $("submitBtn").disabled = false;
+      $("submitBtn").textContent = "Chercher les candidats";
+    }
+  });
+
+  // --- Export
+  function toCsv(list) {
+    const cell = v => '"' + String(v ?? "").replace(/"/g, '""') + '"';
+    const head = ["Rang", "Nom", "Titre", "Score", "Statut", "Localisation", "Séniorité", "Points forts", "À vérifier", "Résumé", "LinkedIn"];
+    return [head, ...list.map((c, i) => [i + 1, c.name, c.headline, c.score, FL[c.freelance] || "", c.location, c.seniority,
+      (c.strengths || []).join(" | "), (c.gaps || []).join(" | "), c.summary, c.url])].map(r => r.map(cell).join(";")).join("\n");
+  }
+  $("csvBtn").addEventListener("click", () => {
+    const blob = new Blob(["﻿" + toCsv(visible())], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "candidats-" + (data.offer?.title || "mission").toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".csv";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  });
+  $("copyBtn").addEventListener("click", async () => {
+    const text = visible().map((c, i) => `${i + 1}. ${c.name} (${c.score}/100, ${FL[c.freelance] || "?"}) – ${c.headline}\n   ${c.summary}\n   ${c.url}`).join("\n\n");
+    try { await navigator.clipboard.writeText(text); toast("Liste copiée"); }
+    catch { toast("Copie refusée par le navigateur. Utilisez l'export CSV."); }
+  });
+
+  let toastTimer;
+  function toast(msg) {
+    let t = document.querySelector(".toast");
+    if (!t) { t = document.createElement("div"); t.className = "toast"; t.setAttribute("role", "status"); document.body.appendChild(t); }
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3500);
+  }
+
+  // Exemple pré-rempli pour montrer l'outil en situation.
+  $("title").value = DEMO.offer.title;
+  $("location").value = "Paris";
+  $("remote").checked = true;
+  $("seniority").value = "Senior (6-10 ans)";
+  $("description").value = "Dans le cadre de la modernisation de sa plateforme data, notre client (secteur assurance) recherche un Data Engineer freelance senior pour une mission de 6 mois renouvelable.\n\nMissions :\n- Concevoir et industrialiser des pipelines PySpark sur Databricks (Azure)\n- Migrer les traitements existants depuis Azure Data Factory\n- Mettre en place la gouvernance avec Unity Catalog\n\nCompétences requises : Databricks, Spark/PySpark, Azure, SQL. Appréciées : dbt, Terraform.\nLieu : Paris, 3 jours de télétravail par semaine. Démarrage ASAP. TJM selon profil.";
+  render();
+})();
+</script>
+</body>
+</html>
